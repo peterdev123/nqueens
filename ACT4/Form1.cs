@@ -203,19 +203,30 @@ namespace ACT4
 
             int newAttackingPairs = getAttackingPairs(currentState);
 
+            // If the new state has fewer attacking pairs, accept the move
             if (newAttackingPairs < currentAttackingPairs)
+            {
                 startState.Y = (int[])currentState.Y.Clone();
-
+            }
             else
             {
-                double probability = Math.Exp((currentAttackingPairs - newAttackingPairs) / temp);
+                double delta = currentAttackingPairs - newAttackingPairs;
+                double probability = Math.Exp(delta / temp);
+
                 if (random.NextDouble() < probability)
+                {
                     startState.Y = (int[])currentState.Y.Clone();
+                }
                 else
+                {
                     currentState.Y = (int[])startState.Y.Clone();
+                }
             }
+
+            // Decrease the temperature
             temp *= coolRate;
             updateUI();
+
             chosenMove = null;
         }
 
@@ -229,13 +240,20 @@ namespace ACT4
             if (getAttackingPairs(currentState) > 0 && chosenMove != null)
             {
                 executeMove((Point)chosenMove);
+
+                // Update the heuristic table for possible moves
                 hTable = getHeuristicTableForPossibleMoves(currentState);
+
+                // Get the best moves based on the updated heuristic table
                 bMoves = getBestMoves(hTable);
+
+                // If there are valid moves available, choose one
                 if (bMoves.Count > 0)
                 {
                     chosenMove = chooseMove(bMoves);
                 }
             }
+
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -261,9 +279,12 @@ namespace ACT4
                     bMoves = getBestMoves(hTable);
 
                     if (bMoves.Count > 0)
+                    {
                         chosenMove = chooseMove(bMoves);
+                    }
                 }
             }
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
