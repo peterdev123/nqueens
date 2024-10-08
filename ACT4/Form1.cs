@@ -13,6 +13,10 @@ namespace ACT4
 {
     public partial class Form1 : Form
     {
+        float temp = 100.0f;
+        float coolRate = 0.99f;
+        Random random = new Random();
+
         int side;
         int n = 6;
         SixState startState;
@@ -112,29 +116,29 @@ namespace ACT4
         private int getAttackingPairs(SixState f)
         {
             int attackers = 0;
-
+            
             for (int rf = 0; rf < n; rf++)
             {
-                for (int tar = rf + 1; tar < n; tar++)
+                for (int tar = rf+1; tar < n; tar++)
                 {
                     // get horizontal attackers
                     if (f.Y[rf] == f.Y[tar])
                         attackers++;
                 }
-                for (int tar = rf + 1; tar < n; tar++)
+                for (int tar = rf+1; tar < n; tar++)
                 {
                     // get diagonal down attackers
                     if (f.Y[tar] == f.Y[rf] + tar - rf)
                         attackers++;
                 }
-                for (int tar = rf + 1; tar < n; tar++)
+                for (int tar = rf+1; tar < n; tar++)
                 {
                     // get diagonal up attackers
                     if (f.Y[rf] == f.Y[tar] + tar - rf)
                         attackers++;
                 }
             }
-
+            
             return attackers;
         }
 
@@ -193,15 +197,26 @@ namespace ACT4
 
         private void executeMove(Point move)
         {
-            for (int i = 0; i < n; i++)
-            {
-                startState.Y[i] = currentState.Y[i];
-            }
+            int currentAttackingPairs = getAttackingPairs(currentState);
             currentState.Y[move.X] = move.Y;
             moveCounter++;
 
-            chosenMove = null;
+            int newAttackingPairs = getAttackingPairs(currentState);
+
+            if (newAttackingPairs < currentAttackingPairs)
+                startState.Y = (int[])currentState.Y.Clone();
+
+            else
+            {
+                double probability = Math.Exp((currentAttackingPairs - newAttackingPairs) / temp);
+                if (random.NextDouble() < probability)
+                    startState.Y = (int[])currentState.Y.Clone();
+                else
+                    currentState.Y = (int[])startState.Y.Clone();
+            }
+            temp *= coolRate;
             updateUI();
+            chosenMove = null;
         }
 
         private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -211,8 +226,16 @@ namespace ACT4
 
         private void button1_Click(object sender, EventArgs e)
         {
-            if (getAttackingPairs(currentState) > 0)
+            if (getAttackingPairs(currentState) > 0 && chosenMove != null)
+            {
                 executeMove((Point)chosenMove);
+                hTable = getHeuristicTableForPossibleMoves(currentState);
+                bMoves = getBestMoves(hTable);
+                if (bMoves.Count > 0)
+                {
+                    chosenMove = chooseMove(bMoves);
+                }
+            }
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -229,9 +252,17 @@ namespace ACT4
 
         private void button2_Click(object sender, EventArgs e)
         {
-            while (getAttackingPairs(currentState) > 0)
+            while (getAttackingPairs(currentState) > 0 && temp > 0.1)
             {
-                executeMove((Point)chosenMove);
+                if (bMoves != null && bMoves.Count > 0 && chosenMove != null)
+                {
+                    executeMove((Point)chosenMove);
+                    hTable = getHeuristicTableForPossibleMoves(currentState);
+                    bMoves = getBestMoves(hTable);
+
+                    if (bMoves.Count > 0)
+                        chosenMove = chooseMove(bMoves);
+                }
             }
         }
 
